@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CBT Interface</title>
+<style>
+  :root{
+    --blue:#0b3d91;
+    --blue-dark:#092c68;
+    --grey-bg:#eef1f5;
+    --not-visited:#ffffff;
+    --not-visited-border:#8a8a8a;
+    --not-answered:#e04b4b;
+    --answered:#3fa34d;
+    --marked:#7a3fa3;
+    --text:#1c1c1c;
+
+    /* NTA CBT palette (practice screen only) */
+    --nta-header:#003366;
+    --nta-header-dark:#00264d;
+    --nta-subbar:#e8edf3;
+    --nta-not-visited:#ffffff;
+    --nta-not-visited-border:#999999;
+    --nta-not-answered:#d63333;
+    --nta-answered:#3cb043;
+    --nta-marked:#a349a4;
+    --nta-save:#0d6efd;
+    --nta-clear:#ffffff;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:"Segoe UI", Arial, sans-serif;
+    background:var(--grey-bg);
+    color:var(--text);
+  }
+  .screen{display:none;}
+  .screen.active{display:block;}
+  .card{
+    background:#fff;
+    border-radius:6px;
+    box-shadow:0 1px 4px rgba(0,0,0,0.15);
+  }
+  button{cursor:pointer; border:none; border-radius:4px; font-size:14px;}
+  input, textarea{
+    font-family:inherit;
+    border:1px solid #ccc;
+    border-radius:4px;
+    padding:8px;
+    font-size:14px;
+  }
+
+  /* ---------- Home screen ---------- */
+  #home{max-width:720px; margin:40px auto; padding:0 16px;}
+  #home h1{color:var(--blue); font-size:22px; margin-bottom:4px;}
+  #home .sub{color:#666; font-size:14px; margin-bottom:20px;}
+  .vaultBox{padding:16px 18px; margin-bottom:16px;}
+  .vaultBox h3{margin:0 0 10px; font-size:14px; color:#222;}
+  .btn-vault{display:inline-block; background:var(--blue); color:#fff; padding:10px 18px; border-radius:4px; cursor:pointer; font-size:14px;}
+  #vaultInfo{font-size:12px; color:#777; margin-top:8px;}
+  .quickTestBox{padding:16px 18px; margin-top:20px;}
+  .quickTestBox h3{margin:0 0 10px; font-size:14px; color:#222;}
+  #quickTestBtn{background:#444; color:#fff; padding:10px 18px;}
+  .setCard{
+    padding:16px 18px;
+    margin-bottom:12px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .setCard .info .name{font-size:15px; font-weight:600; word-break:break-all;}
+  .setCard .info .meta{font-size:12px; color:#777; margin-top:2px;}
+  .setCard .actions{display:flex; gap:8px;}
+  .setCard .actions button{padding:8px 14px;}
+  .btn-practice{background:var(--answered); color:#fff;}
+  #emptyMsg{color:#777; font-size:14px; padding:14px 0;}
+  .vaultBox .row{margin-top:10px; align-items:center;}
+  #refreshBtn{background:var(--blue); color:#fff; padding:9px 16px;}
+  #setSearch{width:100%; margin-top:12px;}
+  .groupHead{font-size:12px; font-weight:700; color:#555; margin:18px 0 8px; word-break:break-all;}
+  #qPassage{
+    display:none; background:#f7f8fa; border-left:4px solid var(--nta-header);
+    padding:12px 14px; margin-bottom:18px; font-size:14px; line-height:1.65;
+    white-space:pre-wrap; max-height:38vh; overflow-y:auto;
+  }
+  #qImage{display:none; margin-bottom:18px; font-size:13px; color:#a12b2b;}
+  #qImage img{max-width:100%; max-height:46vh; border:1px solid #d5dbe3; border-radius:4px; background:#fff;}
+
+  /* ---------- Quick test screen ---------- */
+  #addSet{max-width:640px; margin:40px auto; padding:28px;}
+  #addSet h1{color:var(--blue); font-size:20px; margin-top:0;}
+  #addSet label{display:block; margin:16px 0 6px; font-size:14px; font-weight:600;}
+  #addSet textarea{width:100%; height:220px; font-family:monospace; font-size:12px;}
+  #addSet input[type=text]{width:100%;}
+  #addSet small{color:#666; display:block; margin-top:4px; line-height:1.5;}
+  #addSetError{color:var(--not-answered); font-size:13px; margin-top:10px;}
+  .row{display:flex; gap:10px; margin-top:20px;}
+  #saveSetBtn{background:var(--blue); color:#fff; padding:11px 20px;}
+  #cancelAddBtn, #loadSampleBtn{background:#e5e5e5; color:#222; padding:11px 20px;}
+
+  /* ---------- Duration / session modal ---------- */
+  #durOverlay{
+    display:none;
+    position:fixed; inset:0;
+    background:rgba(0,0,0,0.4);
+    align-items:center; justify-content:center;
+    z-index:50;
+  }
+  #durOverlay.active{display:flex;}
+  #durBox{padding:26px; width:360px; max-height:90vh; overflow-y:auto;}
+  #durBox h2{margin-top:0; font-size:17px; color:var(--blue); word-break:break-all;}
+  #durBox label{display:block; margin:12px 0 6px; font-size:13px; font-weight:600;}
+  #durBox input, #durBox select{width:100%;}
+  #durBox .row{margin-top:18px;}
+  #durStartBtn{background:var(--blue); color:#fff; padding:9px 16px; flex:1;}
+  #durCancelBtn{background:#e5e5e5; color:#222; padding:9px 16px;}
+
+  /* ---------- Exam screen (styled after the NTA CBT interface) ---------- */
+  #exam{display:none; height:100vh; flex-direction:column; font-family:Arial, "Segoe UI", sans-serif;}
+  #exam.active{display:flex;}
+  header{
+    background:var(--nta-header);
+    color:#fff;
+    padding:8px 20px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    border-bottom:3px solid var(--nta-header-dark);
+  }
+  header .title{font-size:15px; font-weight:700; letter-spacing:0.3px;}
+  header .timerWrap{display:flex; align-items:center; gap:10px;}
+  header .timer{
+    font-size:17px;
+    font-weight:700;
+    background:var(--nta-header-dark);
+    padding:6px 14px;
+    border-radius:3px;
+    letter-spacing:1px;
+    border:1px solid rgba(255,255,255,0.3);
+  }
+  header .timer.low{background:#a12b2b;}
+  #pauseBtn{background:#f0ad4e; color:#402c04; padding:7px 14px; font-weight:600; border-radius:3px;}
+
+  #subbar{
+    background:var(--nta-subbar);
+    border-bottom:1px solid #c9d3de;
+    padding:8px 24px;
+    font-size:12.5px;
+    color:#333;
+    display:flex;
+    gap:24px;
+    flex-wrap:wrap;
+  }
+  #subbar span b{color:var(--nta-header);}
+  #sessionInfo{color:var(--nta-header); font-weight:600;}
+
+  #body{flex:1; display:flex; overflow:hidden;}
+
+  #qArea{flex:1; display:flex; flex-direction:column; background:#fff; overflow-y:auto;}
+  #qHeader{padding:14px 24px 6px; font-weight:700; font-size:14px; color:#222;}
+  #qContent{padding:10px 24px 24px; flex:1;}
+  #qText{font-size:15.5px; line-height:1.7; margin-bottom:22px; white-space:pre-wrap;}
+  .option{
+    display:flex; align-items:flex-start; gap:10px;
+    padding:10px 14px; margin-bottom:10px;
+    border:1px solid #cfd6de; border-radius:3px; cursor:pointer; font-size:14.5px;
+  }
+  .option:hover{background:#f2f6fb;}
+  .option.selected{background:#dce9fb; border-color:var(--nta-header);}
+  .option input{margin-top:3px; accent-color:var(--nta-header);}
+
+  #navRow{padding:12px 24px; border-top:1px solid #c9d3de; background:#f4f6f9; display:flex; gap:10px; flex-wrap:wrap; justify-content:space-between;}
+  #navRow .left, #navRow .right{display:flex; gap:10px; flex-wrap:wrap;}
+  .btn-mark{background:var(--nta-marked); color:#fff; padding:9px 16px; font-weight:600; border-radius:3px;}
+  .btn-clear{background:var(--nta-clear); color:#333; padding:9px 16px; font-weight:600; border:1px solid #b7bec7; border-radius:3px;}
+  .btn-save{background:var(--nta-save); color:#fff; padding:9px 18px; font-weight:600; border-radius:3px;}
+  .btn-nav{background:#dfe4ea; color:#222; padding:9px 16px; font-weight:600; border-radius:3px;}
+  .btn-confused{background:#e67e22; color:#fff; padding:9px 16px; font-weight:600; border-radius:3px;}
+  .btn-confused.active{background:#b35400;}
+
+  #sidebar{width:280px; background:#f7f8fa; border-left:1px solid #c9d3de; padding:16px; overflow-y:auto;}
+  #sidebar h3{font-size:13px; margin:0 0 10px; color:#222; text-transform:none;}
+  .legend{font-size:11.5px; margin-bottom:16px;}
+  .legend div{display:flex; align-items:center; gap:7px; margin-bottom:6px;}
+  .swatch{width:15px; height:15px; border-radius:2px; display:inline-block; border:1px solid #999; position:relative;}
+  #palette{display:grid; grid-template-columns:repeat(5, 1fr); gap:7px; margin-bottom:14px;}
+  .pnum{
+    height:32px; display:flex; align-items:center; justify-content:center;
+    font-size:12px; font-weight:700; border-radius:3px; cursor:pointer; color:#fff; position:relative;
+  }
+  .pnum.not-visited{background:var(--nta-not-visited); color:#333; border:1px solid var(--nta-not-visited-border);}
+  .pnum.not-answered{background:var(--nta-not-answered);}
+  .pnum.answered{background:var(--nta-answered);}
+  .pnum.marked{background:var(--nta-marked);}
+  .pnum.marked-answered{background:var(--nta-marked);}
+  .pnum.marked-answered::after{
+    content:""; position:absolute; bottom:2px; right:2px;
+    width:6px; height:6px; background:var(--nta-answered); border-radius:50%; border:1px solid #fff;
+  }
+  .pnum.confused::before{
+    content:"?"; position:absolute; top:-5px; left:-5px;
+    width:14px; height:14px; background:#e67e22; color:#fff;
+    border-radius:50%; font-size:10px; line-height:14px; text-align:center;
+    border:1px solid #fff;
+  }
+  .pnum.current{outline:2px solid #000; outline-offset:1px;}
+  #statusCounts{font-size:11.5px; margin-bottom:14px; border-top:1px solid #dde3ea; padding-top:10px;}
+  #statusCounts div{display:flex; justify-content:space-between; margin-bottom:3px;}
+  #submitBtn{width:100%; background:var(--nta-not-answered); color:#fff; padding:10px; font-weight:700; border-radius:3px;}
+
+  /* ---------- Pause overlay ---------- */
+  #pauseOverlay{
+    display:none;
+    position:fixed; inset:0;
+    background:rgba(0,20,40,0.85);
+    color:#fff;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    z-index:100;
+  }
+  #pauseOverlay.active{display:flex;}
+  #pauseOverlay h2{font-size:22px; margin-bottom:6px;}
+  #pauseOverlay p{font-size:14px; color:#cfd8e3; margin-bottom:20px;}
+  #resumeBtn{background:var(--nta-save); color:#fff; padding:12px 28px; font-size:15px; font-weight:600; border-radius:4px;}
+
+  /* ---------- Result screen ---------- */
+  #result{display:none; max-width:720px; margin:40px auto; padding:28px 28px 40px;}
+  #result.active{display:block;}
+  #result h1{color:var(--blue); font-size:20px;}
+  #resultTable{width:100%; border-collapse:collapse; margin-top:14px; font-size:14px;}
+  #resultTable td, #resultTable th{border:1px solid #ddd; padding:8px; text-align:left;}
+  #reviewList{margin-top:22px;}
+  .revItem{border:1px solid #e0e0e0; border-radius:5px; padding:14px; margin-bottom:12px; font-size:14px;}
+  .revItem .qn{font-weight:600; margin-bottom:8px; line-height:1.5;}
+  .tag{display:inline-block; font-size:11px; padding:2px 8px; border-radius:10px; margin-left:8px; color:#fff;}
+  .tag.correct{background:var(--answered);}
+  .tag.wrong{background:var(--not-answered);}
+  .tag.skipped{background:#888;}
+  .tag.whatsgoing{background:#e67e22;}
+  .explBox{background:#f7f8fb; border-left:3px solid var(--blue); padding:10px 12px; margin:10px 0; font-size:13px; line-height:1.5;}
+  .explBox b{color:var(--blue);}
+  .optNote{padding:8px 10px; border:1px solid #eee; border-radius:4px; margin-top:6px; font-size:13px; line-height:1.5;}
+  .optNote .lbl{font-weight:600; margin-right:6px;}
+  .optNote.isCorrect{border-color:var(--answered); background:#f2faf3;}
+  .optNote.isChosen{border-color:var(--blue);}
+  #sessionSummary{font-size:13px; color:#555; margin-bottom:10px;}
+  .errFields{margin-top:10px; padding-top:10px; border-top:1px dashed #ddd;}
+  .errFields label{display:block; font-size:12px; font-weight:600; margin-top:8px; margin-bottom:4px;}
+  .errFields select, .errFields textarea{width:100%; font-size:13px; padding:7px; border:1px solid #ccc; border-radius:4px; font-family:inherit;}
+  .errFields textarea{resize:vertical;}
+  #backHomeBtn{margin-top:20px; background:var(--blue); color:#fff; padding:10px 20px;}
+  #exportLogBtn{margin-top:20px; margin-right:10px; background:#444; color:#fff; padding:10px 20px; border-radius:4px;}
+</style>
+</head>
+<body>
+
+<!-- ===================== HOME SCREEN ===================== -->
+<div id="home" class="screen active">
+  <h1>My Question Sets</h1>
+  <div class="sub">Your PYQ and mock sets from the vault are listed below. You can also run a one-off quick test.</div>
+
+  <div class="card vaultBox">
+    <h3>Question sets</h3>
+    <div id="vaultInfo">Looking for your vault...</div>
+    <div class="row">
+      <button id="refreshBtn" style="display:none">Refresh list</button>
+      <label class="btn-vault" for="vaultInput" id="pickLabel" style="display:none">Pick vault folder manually</label>
+      <input type="file" id="vaultInput" webkitdirectory multiple style="display:none">
+    </div>
+    <input type="text" id="setSearch" placeholder="Filter by unit, topic or file name">
+  </div>
+
+  <div id="setList"></div>
+  <div id="emptyMsg">No question files found.</div>
+
+  <div class="card quickTestBox">
+    <h3>Quick Test (not saved anywhere)</h3>
+    <button id="quickTestBtn">Paste / Upload a JSON</button>
+  </div>
+</div>
+
+<!-- ===================== QUICK TEST SCREEN ===================== -->
+<div id="addSet" class="screen card">
+  <h1>Quick Test</h1>
+  <label for="setName">Label (optional, shown as the test title)</label>
+  <input type="text" id="setName" placeholder="e.g. Quick Practice">
+
+  <label>Questions (JSON)</label>
+  <div class="row" style="margin-top:0">
+    <button id="loadSampleBtn" type="button">Load sample (10 Qs with explanations)</button>
+    <input type="file" id="fileInput" accept="application/json">
+  </div>
+  <textarea id="jsonBox" placeholder='[{"question":"...","options":["A","B","C","D"],"answer":0,"explanation":"why this is correct","optionNotes":["note on A","note on B","note on C","note on D"],"source":"2021 Dec, Unit 4"}]'></textarea>
+  <small>Each question needs: question, options (array), answer (0-based index of the correct option). Optional but recommended: explanation, optionNotes (one note per option), and source (e.g. "2021 Dec, Unit 4") used for tagging in the error log.</small>
+
+  <div class="row">
+    <button id="saveSetBtn">Start Test</button>
+    <button id="cancelAddBtn">Cancel</button>
+  </div>
+  <div id="addSetError"></div>
+</div>
+
+<!-- ===================== DURATION / SESSION MODAL ===================== -->
+<div id="durOverlay">
+  <div id="durBox" class="card">
+    <h2 id="durSetName">Start test</h2>
+    <label for="durMin">Duration (minutes)</label>
+    <input type="number" id="durMin" value="60" min="1">
+
+    <label for="attemptNum">Attempt number</label>
+    <input type="number" id="attemptNum" value="1" min="1">
+
+    <label for="videoWatchedSel">Watched the lecture video for this topic?</label>
+    <select id="videoWatchedSel">
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </select>
+
+    <label for="reattemptSel">Already done a PYQ run for this topic before?</label>
+    <select id="reattemptSel">
+      <option value="no">No, this is a fresh attempt</option>
+      <option value="yes">Yes, this is a reattempt</option>
+    </select>
+
+    <div class="row">
+      <button id="durStartBtn">Start</button>
+      <button id="durCancelBtn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== EXAM SCREEN ===================== -->
+<div id="exam">
+  <header>
+    <div class="title" id="examTitle">Mock Test</div>
+    <div class="timerWrap">
+      <button id="pauseBtn">Pause</button>
+      <div class="timer" id="timer">00:00:00</div>
+    </div>
+  </header>
+  <div id="subbar">
+    <span>Question Type: <b>MCQ</b></span>
+    <span>Marks for correct answer: <b>+2</b></span>
+    <span>Negative marks: <b>0</b></span>
+    <span id="sessionInfo"></span>
+  </div>
+  <div id="body">
+    <div id="qArea">
+      <div id="qHeader"><span id="qLabel">Question 1</span><span id="qCounter">1 / 10</span></div>
+      <div id="qContent">
+        <div id="qPassage"></div>
+        <div id="qText"></div>
+        <div id="qImage"></div>
+        <div id="optionsBox"></div>
+      </div>
+      <div id="navRow">
+        <div class="left">
+          <button class="btn-mark" id="markBtn">Mark for Review & Next</button>
+          <button class="btn-clear" id="clearBtn">Clear Response</button>
+        </div>
+        <div class="right">
+          <button class="btn-nav" id="prevBtn">Previous</button>
+          <button class="btn-save" id="saveBtn">Save & Next</button>
+          <button class="btn-confused" id="confusedBtn">What's going on</button>
+        </div>
+      </div>
+    </div>
+    <div id="sidebar">
+      <h3>Legend</h3>
+      <div class="legend">
+        <div><span class="swatch" style="background:var(--not-visited);border:1px solid #999"></span> Not Visited</div>
+        <div><span class="swatch" style="background:var(--not-answered)"></span> Not Answered</div>
+        <div><span class="swatch" style="background:var(--answered)"></span> Answered</div>
+        <div><span class="swatch" style="background:var(--marked)"></span> Marked for Review</div>
+        <div><span class="swatch" style="background:var(--marked)"></span> Answered & Marked <span style="display:inline-block;width:6px;height:6px;background:var(--answered);border-radius:50%;margin-left:2px"></span></div>
+        <div><span class="swatch" style="background:#e67e22"></span> "What's going on" flagged</div>
+      </div>
+      <h3>Question Palette</h3>
+      <div id="palette"></div>
+      <div id="statusCounts"></div>
+      <button id="submitBtn">Submit Test</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay">
+  <h2>Test Paused</h2>
+  <p>Timer is stopped. Click resume when you are ready to continue.</p>
+  <button id="resumeBtn">Resume Test</button>
+</div>
+
+<!-- ===================== RESULT SCREEN ===================== -->
+<div id="result" class="card">
+  <h1>Result Summary</h1>
+  <div id="sessionSummary"></div>
+  <div id="saveStatus" style="font-size:12px;color:#777;margin-bottom:8px;"></div>
+  <table id="resultTable"></table>
+  <h3>Answer Review</h3>
+  <div id="reviewList"></div>
+  <button id="exportLogBtn">Download Error Log (.md)</button>
+  <button id="backHomeBtn">Back to Home</button>
+</div>
+
+<script>
+const sampleQuestions = [
+  {
+    question:"Which of the following is the correct sequence of stages in the Davisian cycle of erosion?",
+    options:["Youth to Old age to Maturity","Maturity to Youth to Old age","Youth to Maturity to Old age","Old age to Maturity to Youth"],
+    answer:2,
+    explanation:"Davis described landscape evolution as passing through youth, maturity and old age in that order, driven by progressive erosion of an uplifted landmass.",
+    optionNotes:[
+      "Wrong order. Old age cannot come before maturity in Davis's model.",
+      "Wrong order. Youth is the starting stage, not something reached after maturity.",
+      "Correct. This is the standard Davisian sequence: youth (steep gradients, V-shaped valleys), maturity (maximum relief, well-graded profile), old age (peneplain, low relief).",
+      "Wrong order. This reverses the entire cycle."
+    ]
+  },
+  {
+    question:"The 'Central Place Theory' was propounded by:",
+    options:["Walter Christaller","August Losch","Homer Hoyt","E.W. Burgess"],
+    answer:0,
+    explanation:"Christaller developed Central Place Theory in 1933 to explain the size, number and spacing of settlements based on the range and threshold of goods and services.",
+    optionNotes:[
+      "Correct. Christaller's 1933 work on southern Germany is the origin of this theory.",
+      "A common distractor. Losch later refined and generalised Christaller's model with his own economic landscape theory, but he did not originate it.",
+      "Hoyt is known for the Sector Model of urban land use, not central place theory.",
+      "Burgess is known for the Concentric Zone Model of urban structure, a different theory entirely."
+    ]
+  },
+  {
+    question:"Which index is used to measure the concentration of population in an area?",
+    options:["Gini Index","Location Quotient","Sex Ratio","Physiological Density"],
+    answer:3,
+    explanation:"Physiological density (population per unit of cultivable/arable land) reflects how concentrated population pressure is relative to usable land, unlike arithmetic density which uses total land area.",
+    optionNotes:[
+      "The Gini Index measures inequality in distribution (often income), not population concentration on land.",
+      "Location Quotient compares the share of an activity in a region against the national share; it is an economic geography tool, not a population density measure.",
+      "Sex ratio measures the number of females per males, unrelated to concentration on land.",
+      "Correct. Physiological density is exactly this: population divided by cultivable land, a sharper measure of land pressure than arithmetic density."
+    ]
+  },
+  {
+    question:"The term 'Bhangar' refers to:",
+    options:["Newer alluvium of the flood plains","Older alluvium above flood level","Coastal sand dunes","Delta deposits"],
+    answer:1,
+    explanation:"In the Indo-Gangetic plains, Bhangar is the older alluvium found on terraces above the flood level, often calcareous with kankar nodules, in contrast to Khadar which is the newer, more fertile flood plain alluvium.",
+    optionNotes:[
+      "This describes Khadar, not Bhangar. Khadar and Bhangar are frequently confused in exams, so remember: Khadar = newer/lower/flood plain, Bhangar = older/higher/terrace.",
+      "Correct. Bhangar sits above flood level and is older, less fertile alluvium.",
+      "Coastal sand dunes are an unrelated coastal landform, not part of the alluvial classification of the Gangetic plains.",
+      "Delta deposits form at river mouths where rivers meet seas, a different depositional context altogether."
+    ]
+  },
+  {
+    question:"Koppen's climate classification 'Aw' represents:",
+    options:["Tropical rainforest climate","Tropical savanna climate","Humid subtropical climate","Mediterranean climate"],
+    answer:1,
+    explanation:"In Koppen's system, 'A' denotes tropical climates and 'w' denotes a dry winter season, together describing the tropical savanna (wet and dry) climate typical of regions like much of peninsular India and the African savanna belt.",
+    optionNotes:[
+      "Tropical rainforest is coded 'Af' (f = no dry season), not 'Aw'.",
+      "Correct. 'Aw' is tropical wet and dry, i.e. savanna climate, with a pronounced dry winter.",
+      "Humid subtropical is coded 'Cwa' or 'Cfa' under the 'C' (mild mid-latitude) group, not 'A'.",
+      "Mediterranean climate is coded 'Cs' (dry summer, mild mid-latitude), also under 'C', not 'A'."
+    ]
+  },
+  {
+    question:"Which remote sensing satellite series is indigenously developed by India for resource monitoring?",
+    options:["Landsat","IRS (Indian Remote Sensing)","SPOT","Sentinel"],
+    answer:1,
+    explanation:"IRS is ISRO's own series of remote sensing satellites, launched from 1988 onward, used extensively for land use, agriculture, forestry and water resource monitoring within India.",
+    optionNotes:[
+      "Landsat is a long-running American (NASA/USGS) satellite series, not Indian.",
+      "Correct. IRS satellites are built and operated by ISRO specifically for domestic resource monitoring.",
+      "SPOT is a French satellite series (CNES), not Indian.",
+      "Sentinel satellites are operated by the European Space Agency under the Copernicus programme, not Indian."
+    ]
+  },
+  {
+    question:"The concept of 'Possibilism' in geography is most associated with:",
+    options:["Friedrich Ratzel","Ellen Churchill Semple","Paul Vidal de la Blache","Ellsworth Huntington"],
+    answer:2,
+    explanation:"Vidal de la Blache, a French geographer, argued that the environment offers possibilities rather than dictates outcomes, with human choice and culture determining which possibilities are realised. This is possibilism, opposed to environmental determinism.",
+    optionNotes:[
+      "Ratzel is a founding figure of environmental determinism (and of anthropogeography), the opposite school of thought to possibilism.",
+      "Semple was a student of Ratzel and popularised environmental determinism in the English-speaking world, not possibilism.",
+      "Correct. Vidal de la Blache is the central figure associated with possibilism in French geographic thought.",
+      "Huntington is another strong environmental determinist, known for linking climate to civilisation and human energy levels."
+    ]
+  },
+  {
+    question:"In GIS, a raster data model represents spatial features as:",
+    options:["Points, lines and polygons","A grid of cells or pixels","Vector coordinates","Topological relationships only"],
+    answer:1,
+    explanation:"Raster models divide space into a regular grid of cells (pixels), each holding a value, making them well suited to continuous data like elevation, temperature or satellite imagery.",
+    optionNotes:[
+      "This describes the vector model, which represents discrete features using points, lines and polygons defined by coordinates.",
+      "Correct. Grid cells (pixels), each carrying an attribute value, define the raster model.",
+      "This is a vector concept. Vector data model uses coordinate geometry, raster does not.",
+      "Topology describes spatial relationships (adjacency, connectivity) in vector data structures; it is not how raster data is organised."
+    ]
+  },
+  {
+    question:"The 'Doctrine of the Lapse' was related to:",
+    options:["Land revenue systems","British annexation policy","River basin treaties","Forest conservation"],
+    answer:1,
+    explanation:"The Doctrine of Lapse, applied by Lord Dalhousie, allowed the British East India Company to annex Indian princely states if a ruler died without a natural heir, and was used to absorb several states into British territory.",
+    optionNotes:[
+      "Land revenue systems refer to arrangements like Permanent Settlement, Ryotwari and Mahalwari, an unrelated area of colonial policy.",
+      "Correct. This doctrine was specifically an annexation tool used against princely states lacking natural heirs.",
+      "There is no historical link between this doctrine and river basin treaties.",
+      "Forest conservation policy is a separate strand of colonial administration, unconnected to succession-based annexation."
+    ]
+  },
+  {
+    question:"Which of the following best describes 'Inselberg'?",
+    options:["A river meander cut off from the main channel","An isolated hill rising abruptly from a plain in arid regions","A glacial depositional landform","A coastal erosional feature"],
+    answer:1,
+    explanation:"Inselbergs (literally 'island mountains') are isolated residual hills, often granite or gneiss, standing abruptly above a surrounding erosion plain, typically formed in semi-arid and arid landscapes through processes tied to weathering and pediplanation.",
+    optionNotes:[
+      "This describes an oxbow lake, a fluvial feature unrelated to inselbergs.",
+      "Correct. Inselbergs are precisely these isolated residual hills rising sharply from a plain, common in semi-arid regions like parts of Africa and peninsular India.",
+      "Glacial deposition produces landforms like moraines and drumlins, a different environment and process altogether.",
+      "Coastal erosion produces features like cliffs, stacks and arches, unrelated to inselbergs which form in arid interior landscapes."
+    ]
+  }
+];
+
+let vaultSets = [];        // [{relPath, questions}] read live from the picked folder
+let currentPractice = null; // {name, questions} of whatever is about to be started
+let sessionMeta = { attemptNumber:1, videoWatched:false, reattempt:false };
+let questions = [];
+let answers = [];
+let visited = [];
+let marked = [];
+let confused = [];
+let current = 0;
+let timeLeft = 0;
+let timerInterval = null;
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* ---------------- listing question sets ---------------- */
+let autoMode = false;
+
+async function loadFromServer(){
+  const info = document.getElementById('vaultInfo');
+  try{
+    const r = await fetch('/api/sets', { cache: 'no-store' });
+    if(!r.ok) throw new Error('bad status');
+    const d = await r.json();
+    autoMode = true;
+    vaultSets = d.sets.map(x => ({ relPath: x.path, count: x.count, questions: null }));
+    info.textContent = vaultSets.length + ' question file(s) found in ' + d.root;
+  }catch(err){
+    autoMode = false;
+    info.textContent = 'Auto-listing is off because this page was opened as a plain file. ' +
+      'Start it with CBT_Interface.bat to list your sets automatically, or pick the vault folder below.';
+  }
+  document.getElementById('refreshBtn').style.display = autoMode ? 'inline-block' : 'none';
+  document.getElementById('pickLabel').style.display = autoMode ? 'none' : 'inline-block';
+  renderHome();
+}
+
+document.getElementById('refreshBtn').onclick = loadFromServer;
+document.getElementById('setSearch').oninput = renderHome;
+
+/* manual fallback when the page is opened without the launcher */
+document.getElementById('vaultInput').addEventListener('change', async (e) => {
+  const files = Array.from(e.target.files).filter(f => {
+    const n = f.name.toLowerCase();
+    return n.endsWith('.json') && !n.startsWith('template_json');
+  });
+  const loaded = [];
+  for(const f of files){
+    try{
+      const text = await f.text();
+      const parsed = JSON.parse(text);
+      if(Array.isArray(parsed) && parsed.length && parsed[0] && parsed[0].question){
+        loaded.push({ relPath: f.webkitRelativePath || f.name, count: parsed.length, questions: parsed });
+      }
+    }catch(err){
+      /* not a question-set JSON, skip quietly */
+    }
+  }
+  loaded.sort((a,b) => a.relPath.localeCompare(b.relPath));
+  vaultSets = loaded;
+  document.getElementById('vaultInfo').textContent =
+    loaded.length + ' question file(s) found. Pick the folder again any time to refresh.';
+  renderHome();
+});
+
+/* ---------------- home screen ---------------- */
+async function practiceEntry(entry){
+  if(entry.questions){
+    openDurationModal(entry.relPath, entry.questions);
+    return;
+  }
+  try{
+    const r = await fetch('/api/file?path=' + encodeURIComponent(entry.relPath), { cache: 'no-store' });
+    if(!r.ok) throw new Error('bad status');
+    const qs = await r.json();
+    openDurationModal(entry.relPath, qs);
+  }catch(err){
+    alert('Could not read ' + entry.relPath + '. Refresh the list and try again.');
+  }
+}
+
+function renderHome(){
+  const list = document.getElementById('setList');
+  const empty = document.getElementById('emptyMsg');
+  const term = document.getElementById('setSearch').value.trim().toLowerCase();
+  const shown = vaultSets.filter(e => !term || e.relPath.toLowerCase().includes(term));
+  list.innerHTML = '';
+  empty.style.display = shown.length ? 'none' : 'block';
+  let lastDir = null;
+  shown.forEach(entry => {
+    const cut = entry.relPath.lastIndexOf('/');
+    const dir = cut >= 0 ? entry.relPath.slice(0, cut) : '(vault root)';
+    const file = cut >= 0 ? entry.relPath.slice(cut + 1) : entry.relPath;
+    if(dir !== lastDir){
+      const head = document.createElement('div');
+      head.className = 'groupHead';
+      head.textContent = dir;
+      list.appendChild(head);
+      lastDir = dir;
+    }
+    const card = document.createElement('div');
+    card.className = 'card setCard';
+    card.innerHTML =
+      '<div class="info"><div class="name"></div><div class="meta"></div></div>' +
+      '<div class="actions"><button class="btn-practice">Practice</button></div>';
+    card.querySelector('.name').textContent = file;
+    card.querySelector('.meta').textContent = entry.count + ' questions';
+    card.querySelector('.btn-practice').onclick = () => practiceEntry(entry);
+    list.appendChild(card);
+  });
+}
+
+document.getElementById('quickTestBtn').onclick = () => {
+  document.getElementById('setName').value = '';
+  document.getElementById('jsonBox').value = '';
+  document.getElementById('addSetError').textContent = '';
+  showScreen('addSet');
+};
+document.getElementById('cancelAddBtn').onclick = () => showScreen('home');
+
+document.getElementById('loadSampleBtn').onclick = () => {
+  document.getElementById('jsonBox').value = JSON.stringify(sampleQuestions, null, 2);
+  if(!document.getElementById('setName').value){
+    document.getElementById('setName').value = 'Sample Geography Set';
+  }
+};
+
+document.getElementById('fileInput').onchange = (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => { document.getElementById('jsonBox').value = ev.target.result; };
+  reader.readAsText(file);
+};
+
+document.getElementById('saveSetBtn').onclick = () => {
+  const errBox = document.getElementById('addSetError');
+  errBox.textContent = '';
+  const raw = document.getElementById('jsonBox').value.trim();
+  let parsed;
+  try{
+    parsed = JSON.parse(raw);
+    if(!Array.isArray(parsed) || parsed.length === 0) throw new Error('empty');
+    parsed.forEach(q => {
+      if(!q.question || !Array.isArray(q.options) || typeof q.answer !== 'number'){
+        throw new Error('bad format');
+      }
+    });
+  }catch(err){
+    errBox.textContent = 'Could not read the JSON. Check the format and try again.';
+    return;
+  }
+  const name = document.getElementById('setName').value.trim() || 'Quick Test';
+  showScreen('home');
+  openDurationModal(name, parsed);
+};
+
+/* ---------------- duration / session modal ---------------- */
+function openDurationModal(name, qs){
+  currentPractice = { name, questions: qs };
+  document.getElementById('durSetName').textContent = 'Start: ' + name;
+  document.getElementById('durMin').value = 60;
+  document.getElementById('attemptNum').value = 1;
+  document.getElementById('videoWatchedSel').value = 'yes';
+  document.getElementById('reattemptSel').value = 'no';
+  document.getElementById('durOverlay').classList.add('active');
+}
+document.getElementById('durCancelBtn').onclick = () => {
+  document.getElementById('durOverlay').classList.remove('active');
+};
+document.getElementById('durStartBtn').onclick = () => {
+  const dur = parseInt(document.getElementById('durMin').value, 10);
+  if(!dur || dur <= 0){
+    alert('Enter a valid duration in minutes.');
+    return;
+  }
+  sessionMeta = {
+    attemptNumber: parseInt(document.getElementById('attemptNum').value, 10) || 1,
+    videoWatched: document.getElementById('videoWatchedSel').value === 'yes',
+    reattempt: document.getElementById('reattemptSel').value === 'yes'
+  };
+  document.getElementById('durOverlay').classList.remove('active');
+  startTest(currentPractice.name, currentPractice.questions, dur);
+};
+
+/* ---------------- exam logic ---------------- */
+function startTest(name, qs, dur){
+  questions = qs;
+  document.getElementById('examTitle').textContent = name;
+  answers = new Array(questions.length).fill(null);
+  visited = new Array(questions.length).fill(false);
+  marked = new Array(questions.length).fill(false);
+  confused = new Array(questions.length).fill(false);
+  timeLeft = dur * 60;
+  totalSeconds = dur * 60;
+  resultFileId = null;
+  current = 0;
+
+  document.getElementById('sessionInfo').textContent =
+    'Attempt #' + sessionMeta.attemptNumber + ' | ' +
+    (sessionMeta.reattempt ? 'Reattempt after PYQ run' : 'Fresh attempt') + ' | ' +
+    'Video watched: ' + (sessionMeta.videoWatched ? 'Yes' : 'No');
+
+  showScreen('exam');
+  document.getElementById('exam').style.display = 'flex';
+  buildPalette();
+  renderQuestion();
+  startTimer();
+}
+
+function startTimer(){
+  updateTimerDisplay();
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    updateTimerDisplay();
+    if(timeLeft <= 0){
+      clearInterval(timerInterval);
+      submitTest();
+    }
+  }, 1000);
+}
+function updateTimerDisplay(){
+  const h = Math.floor(timeLeft/3600);
+  const m = Math.floor((timeLeft%3600)/60);
+  const s = timeLeft%60;
+  const el = document.getElementById('timer');
+  el.textContent = [h,m,s].map(v => String(v).padStart(2,'0')).join(':');
+  el.classList.toggle('low', timeLeft <= 300);
+}
+
+function buildPalette(){
+  const pal = document.getElementById('palette');
+  pal.innerHTML = '';
+  questions.forEach((q, i) => {
+    const d = document.createElement('div');
+    d.className = 'pnum not-visited';
+    d.textContent = i+1;
+    d.id = 'pnum-' + i;
+    d.onclick = () => { current = i; renderQuestion(); };
+    pal.appendChild(d);
+  });
+}
+function statusClass(i){
+  if(marked[i] && answers[i] !== null) return 'marked-answered';
+  if(marked[i]) return 'marked';
+  if(answers[i] !== null) return 'answered';
+  if(visited[i]) return 'not-answered';
+  return 'not-visited';
+}
+function refreshPalette(){
+  let cAnswered=0, cNotAnswered=0, cNotVisited=0, cMarked=0, cMarkedAnswered=0;
+  questions.forEach((q,i) => {
+    const cls = statusClass(i);
+    const el = document.getElementById('pnum-'+i);
+    el.className = 'pnum ' + cls + (confused[i] ? ' confused' : '');
+    el.classList.toggle('current', i === current);
+    if(cls === 'answered') cAnswered++;
+    else if(cls === 'not-answered') cNotAnswered++;
+    else if(cls === 'not-visited') cNotVisited++;
+    else if(cls === 'marked') cMarked++;
+    else if(cls === 'marked-answered') cMarkedAnswered++;
+  });
+  document.getElementById('statusCounts').innerHTML =
+    '<div><span>Answered</span><span>'+cAnswered+'</span></div>' +
+    '<div><span>Not Answered</span><span>'+cNotAnswered+'</span></div>' +
+    '<div><span>Not Visited</span><span>'+cNotVisited+'</span></div>' +
+    '<div><span>Marked for Review</span><span>'+cMarked+'</span></div>' +
+    '<div><span>Answered & Marked</span><span>'+cMarkedAnswered+'</span></div>';
+}
+
+function renderQuestion(){
+  visited[current] = true;
+  const q = questions[current];
+  document.getElementById('qLabel').textContent = 'Question ' + (current+1);
+  document.getElementById('qCounter').textContent = (current+1) + ' / ' + questions.length;
+  document.getElementById('qText').textContent = q.question;
+  const pEl = document.getElementById('qPassage');
+  if(q.passage){
+    pEl.textContent = q.passage;
+    pEl.style.display = 'block';
+  }else{
+    pEl.style.display = 'none';
+  }
+
+  const iEl = document.getElementById('qImage');
+  iEl.innerHTML = '';
+  if(q.image){
+    const img = document.createElement('img');
+    img.src = '/img/' + encodeURIComponent(q.image);
+    img.alt = 'Diagram for this question';
+    img.onerror = () => { iEl.textContent = 'Diagram file not found: ' + q.image + '. Save it in the _Images folder and start the interface with CBT_Interface.bat.'; };
+    iEl.appendChild(img);
+    iEl.style.display = 'block';
+  }else{
+    iEl.style.display = 'none';
+  }
+
+  const box = document.getElementById('optionsBox');
+  box.innerHTML = '';
+  q.options.forEach((opt, idx) => {
+    const div = document.createElement('div');
+    div.className = 'option' + (answers[current] === idx ? ' selected' : '');
+    div.innerHTML = '<input type="radio" name="opt" ' + (answers[current]===idx?'checked':'') + '><span></span>';
+    div.querySelector('span').textContent = opt;
+    div.onclick = () => { answers[current] = idx; renderQuestion(); refreshPalette(); };
+    box.appendChild(div);
+  });
+
+  document.getElementById('prevBtn').disabled = (current === 0);
+  const cBtn = document.getElementById('confusedBtn');
+  cBtn.classList.toggle('active', !!confused[current]);
+  cBtn.textContent = confused[current] ? "What's going on (marked)" : "What's going on";
+  refreshPalette();
+}
+
+document.getElementById('saveBtn').onclick = () => { goNext(); };
+document.getElementById('markBtn').onclick = () => { marked[current] = true; goNext(); };
+document.getElementById('clearBtn').onclick = () => { answers[current] = null; marked[current] = false; renderQuestion(); refreshPalette(); };
+document.getElementById('prevBtn').onclick = () => { if(current>0){ current--; renderQuestion(); } };
+document.getElementById('confusedBtn').onclick = () => {
+  confused[current] = !confused[current];
+  renderQuestion();
+};
+
+function goNext(){
+  if(current < questions.length - 1){
+    current++;
+    renderQuestion();
+  } else {
+    refreshPalette();
+  }
+}
+
+document.getElementById('submitBtn').onclick = () => {
+  if(confirm('Submit the test now? You will not be able to change answers after this.')){
+    clearInterval(timerInterval);
+    submitTest();
+  }
+};
+
+document.getElementById('pauseBtn').onclick = () => {
+  clearInterval(timerInterval);
+  document.getElementById('pauseOverlay').classList.add('active');
+};
+document.getElementById('resumeBtn').onclick = () => {
+  document.getElementById('pauseOverlay').classList.remove('active');
+  startTimer();
+};
+
+/* ---------------- result screen ---------------- */
+function submitTest(){
+  document.getElementById('exam').style.display = 'none';
+  showScreen('result');
+
+  document.getElementById('sessionSummary').textContent =
+    currentPractice.name + ' | Attempt #' + sessionMeta.attemptNumber + ' | ' +
+    (sessionMeta.reattempt ? 'Reattempt after PYQ run' : 'Fresh attempt') + ' | ' +
+    'Video watched: ' + (sessionMeta.videoWatched ? 'Yes' : 'No');
+
+  let correct = 0, wrong = 0, skipped = 0;
+  questions.forEach((q,i) => {
+    if(answers[i] === null) skipped++;
+    else if(answers[i] === q.answer) correct++;
+    else wrong++;
+  });
+
+  const table = document.getElementById('resultTable');
+  table.innerHTML =
+    '<tr><th>Total Questions</th><td>'+questions.length+'</td></tr>' +
+    '<tr><th>Attempted</th><td>'+(correct+wrong)+'</td></tr>' +
+    '<tr><th>Not Attempted</th><td>'+skipped+'</td></tr>' +
+    '<tr><th>Correct</th><td>'+correct+'</td></tr>' +
+    '<tr><th>Wrong</th><td>'+wrong+'</td></tr>' +
+    '<tr><th>Score</th><td>'+(correct*2)+' / '+(questions.length*2)+' (assuming +2 per correct, no negative marking)</td></tr>';
+
+  const revList = document.getElementById('reviewList');
+  revList.innerHTML = '';
+  questions.forEach((q,i) => {
+    const userAns = answers[i];
+    let tagClass = 'skipped', tagText = 'Skipped';
+    if(userAns !== null){
+      if(userAns === q.answer){ tagClass='correct'; tagText='Correct'; }
+      else { tagClass='wrong'; tagText='Wrong'; }
+    }
+    const div = document.createElement('div');
+    div.className = 'revItem';
+
+    const qn = document.createElement('div');
+    qn.className = 'qn';
+    qn.textContent = 'Q' + (i+1) + '. ' + q.question;
+    const tag = document.createElement('span');
+    tag.className = 'tag ' + tagClass;
+    tag.textContent = tagText;
+    qn.appendChild(tag);
+    if(confused[i]){
+      const wgTag = document.createElement('span');
+      wgTag.className = 'tag whatsgoing';
+      wgTag.textContent = "What's going on";
+      qn.appendChild(wgTag);
+    }
+    div.appendChild(qn);
+
+    const metaBits = [q.unit, q.topic, q.id].filter(Boolean);
+    if(metaBits.length){
+      const meta = document.createElement('div');
+      meta.style.cssText = 'font-size:12px;color:#777;margin-bottom:6px;';
+      meta.textContent = metaBits.join(' | ');
+      div.appendChild(meta);
+    }
+    if(q.passage){
+      const det = document.createElement('details');
+      det.style.cssText = 'margin-bottom:8px;font-size:13px;';
+      const sum = document.createElement('summary');
+      sum.textContent = 'Show passage';
+      sum.style.cursor = 'pointer';
+      const pb = document.createElement('div');
+      pb.style.cssText = 'white-space:pre-wrap;line-height:1.6;margin-top:6px;';
+      pb.textContent = q.passage;
+      det.appendChild(sum);
+      det.appendChild(pb);
+      div.appendChild(det);
+    }
+
+    if(q.image){
+      const im = document.createElement('img');
+      im.src = '/img/' + encodeURIComponent(q.image);
+      im.alt = 'Diagram';
+      im.style.cssText = 'max-width:100%;max-height:260px;margin:6px 0 10px;border:1px solid #ddd;border-radius:4px;';
+      div.appendChild(im);
+    }
+
+    const yourAns = document.createElement('div');
+    yourAns.textContent = 'Your answer: ' + (userAns !== null ? q.options[userAns] : 'not attempted');
+    div.appendChild(yourAns);
+
+    const correctAns = document.createElement('div');
+    correctAns.textContent = 'Correct answer: ' + q.options[q.answer];
+    div.appendChild(correctAns);
+
+    if(q.explanation){
+      const expl = document.createElement('div');
+      expl.className = 'explBox';
+      const b = document.createElement('b');
+      b.textContent = 'Why: ';
+      expl.appendChild(b);
+      expl.appendChild(document.createTextNode(q.explanation));
+      div.appendChild(expl);
+    }
+
+    if(Array.isArray(q.optionNotes) && q.optionNotes.length === q.options.length){
+      const wrap = document.createElement('div');
+      q.options.forEach((opt, idx) => {
+        const note = document.createElement('div');
+        let cls = 'optNote';
+        if(idx === q.answer) cls += ' isCorrect';
+        if(idx === userAns) cls += ' isChosen';
+        note.className = cls;
+        const lbl = document.createElement('span');
+        lbl.className = 'lbl';
+        let tagBits = [];
+        if(idx === q.answer) tagBits.push('correct answer');
+        if(idx === userAns && idx !== q.answer) tagBits.push('your choice');
+        lbl.textContent = opt + (tagBits.length ? ' (' + tagBits.join(', ') + ')' : '') + ':';
+        note.appendChild(lbl);
+        note.appendChild(document.createTextNode(' ' + q.optionNotes[idx]));
+        wrap.appendChild(note);
+      });
+      div.appendChild(wrap);
+    }
+
+    if(q.concept){
+      const con = document.createElement('div');
+      con.className = 'explBox';
+      const cb = document.createElement('b');
+      cb.textContent = 'Concept: ';
+      con.appendChild(cb);
+      con.appendChild(document.createTextNode(q.concept));
+      div.appendChild(con);
+    }
+
+    if(tagText !== 'Correct' || confused[i]){
+      const errFields = document.createElement('div');
+      errFields.className = 'errFields';
+      errFields.innerHTML =
+        '<label>Mistake reason</label>' +
+        '<select class="mistakeReason" data-idx="'+i+'">' +
+          '<option value="">Select...</option>' +
+          '<option value="Concept gap">Concept gap</option>' +
+          '<option value="Silly mistake">Silly mistake</option>' +
+          '<option value="Misread question">Misread question</option>' +
+          '<option value="Guess">Guess</option>' +
+        '</select>' +
+        '<label>Concept note (in your own words)</label>' +
+        '<textarea class="conceptNote" data-idx="'+i+'" rows="2" placeholder="What you need to remember so this does not repeat"></textarea>';
+      div.appendChild(errFields);
+    }
+
+    revList.appendChild(div);
+  });
+
+  resultFileId = makeResultFileId();
+  saveResult();
+}
+
+/* ---------------- light result file (saved into the vault by the server) ---------------- */
+let resultFileId = null;
+let totalSeconds = 0;
+
+function makeResultFileId(){
+  const d = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const stamp = d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + '_' +
+                pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds());
+  const safe = currentPractice.name.replace(/\.json$/i, '').replace(/[^A-Za-z0-9]+/g, '-')
+                 .replace(/^-+|-+$/g, '').slice(0, 80) || 'set';
+  return stamp + '_' + safe + '_att' + sessionMeta.attemptNumber;
+}
+
+function buildResultData(){
+  const qs = questions.map((q, i) => {
+    const userAns = answers[i];
+    const reasonEl = document.querySelector('.mistakeReason[data-idx="'+i+'"]');
+    const noteEl = document.querySelector('.conceptNote[data-idx="'+i+'"]');
+    const item = {
+      n: i + 1,
+      id: q.id || null,
+      unit: q.unit || null,
+      topic: q.topic || null,
+      source: q.source || null,
+      result: userAns === null ? 'skipped' : (userAns === q.answer ? 'correct' : 'wrong'),
+      chosen: userAns,
+      answer: q.answer,
+      whatsGoing: !!confused[i]
+    };
+    if(reasonEl && reasonEl.value) item.mistakeReason = reasonEl.value;
+    if(noteEl && noteEl.value.trim()) item.conceptNote = noteEl.value.trim();
+    return item;
+  });
+  return {
+    date: new Date().toISOString(),
+    set: currentPractice.name,
+    attempt: sessionMeta.attemptNumber,
+    reattempt: sessionMeta.reattempt,
+    videoWatched: sessionMeta.videoWatched,
+    durationMinutes: Math.round(totalSeconds / 60),
+    timeUsedSeconds: Math.max(0, totalSeconds - Math.max(timeLeft, 0)),
+    questions: qs
+  };
+}
+
+async function saveResult(){
+  const status = document.getElementById('saveStatus');
+  if(!autoMode){
+    status.textContent = 'Result not saved to the vault: open the interface with CBT_Interface.bat to turn this on.';
+    return;
+  }
+  try{
+    const r = await fetch('/api/result', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CBT': '1' },
+      body: JSON.stringify({ fileId: resultFileId, data: buildResultData() })
+    });
+    if(!r.ok) throw new Error('bad status');
+    status.textContent = 'Result saved to _Results/' + resultFileId + '.json';
+  }catch(err){
+    status.textContent = 'Could not save the result file. Close the old CBT console window and start the interface again with CBT_Interface.bat.';
+  }
+}
+
+/* mistake reasons and concept notes chosen after submitting are saved too */
+document.getElementById('reviewList').addEventListener('change', () => {
+  if(resultFileId) saveResult();
+});
+
+/* ---------------- error log export ---------------- */
+function buildErrorLogMarkdown(){
+  let md = '# Error Log - ' + currentPractice.name + '\n\n';
+  md += 'Attempt #' + sessionMeta.attemptNumber + ' | ' +
+        (sessionMeta.reattempt ? 'Reattempt after PYQ run' : 'Fresh attempt') + ' | ' +
+        'Video watched: ' + (sessionMeta.videoWatched ? 'Yes' : 'No') + '\n';
+  md += 'Date: ' + new Date().toLocaleDateString() + '\n\n---\n\n';
+
+  questions.forEach((q,i) => {
+    const userAns = answers[i];
+    const isCorrect = userAns !== null && userAns === q.answer;
+    if(isCorrect && !confused[i]) return; // only log wrong, skipped, or flagged "what's going on"
+
+    const reasonEl = document.querySelector('.mistakeReason[data-idx="'+i+'"]');
+    const noteEl = document.querySelector('.conceptNote[data-idx="'+i+'"]');
+    const reason = reasonEl ? reasonEl.value : '';
+    const note = noteEl ? noteEl.value.trim() : '';
+
+    md += '## Q' + (i+1) + '. ' + q.question + '\n\n';
+    if(q.source) md += 'Source/Tag: ' + q.source + '\n\n';
+    if(q.id) md += 'Question ID: ' + q.id + '\n\n';
+    if(q.unit || q.topic) md += 'Unit/Topic: ' + [q.unit, q.topic].filter(Boolean).join(' > ') + '\n\n';
+    if(Array.isArray(q.appearedIn) && q.appearedIn.length) md += 'Appeared in: ' + q.appearedIn.join('; ') + '\n\n';
+    if(confused[i]) md += 'Flagged: What\'s going on (no idea / very weak on this topic)\n\n';
+    md += 'Your answer: ' + (userAns !== null ? q.options[userAns] : 'Not attempted') + '\n';
+    md += 'Correct answer: ' + q.options[q.answer] + '\n\n';
+    if(q.explanation) md += 'Why: ' + q.explanation + '\n\n';
+    if(q.concept) md += 'Concept (from bank): ' + q.concept + '\n\n';
+    if(Array.isArray(q.optionNotes) && q.optionNotes.length === q.options.length){
+      md += 'Option breakdown:\n';
+      q.options.forEach((opt, idx) => {
+        let tagBits = [];
+        if(idx === q.answer) tagBits.push('correct');
+        if(idx === userAns) tagBits.push('your choice');
+        md += '- ' + opt + (tagBits.length ? ' (' + tagBits.join(', ') + ')' : '') + ': ' + q.optionNotes[idx] + '\n';
+      });
+      md += '\n';
+    }
+    if(reason) md += 'Mistake reason: ' + reason + '\n\n';
+    if(note) md += 'Concept note: ' + note + '\n\n';
+    md += '---\n\n';
+  });
+  return md;
+}
+
+document.getElementById('exportLogBtn').onclick = () => {
+  const md = buildErrorLogMarkdown();
+  const blob = new Blob([md], { type: 'text/markdown' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const safeName = currentPractice.name.replace(/[\\/]/g, '_').replace(/\.json$/i, '');
+  a.download = safeName + '-error-log-attempt' + sessionMeta.attemptNumber + '.md';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+document.getElementById('backHomeBtn').onclick = () => {
+  showScreen('home');
+  renderHome();
+};
+
+/* ---------------- init ---------------- */
+renderHome();
+loadFromServer();
+</script>
+</body>
+</html>
